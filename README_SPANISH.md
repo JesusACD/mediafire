@@ -9,7 +9,7 @@ SDK completo de MediaFire para Node.js. **Solo necesitas tu correo y contraseña
 - 🔐 **Autenticación simple** - Solo correo y contraseña, sin API keys
 - 📁 **Gestión completa** - Archivos y carpetas (crear, mover, copiar, eliminar)
 - 📤 **Subida de archivos** - Soporta archivos grandes
-- 🔍 **Búsqueda** - Buscar archivos en tu cuenta
+- 🔍 **Búsqueda Inteligente** - Búsqueda avanzada con extracción automática de palabras clave
 - 🔗 **Enlaces directos** - Obtener URLs de descarga
 - 📊 **TypeScript** - Tipos completos incluidos
 
@@ -138,9 +138,25 @@ const fileInfo = await client.files.getInfo("quickKey");
 const links = await client.files.getLinks("quickKey");
 // { viewLink, normalDownload, directDownload }
 
-// Buscar archivos
+// Buscar archivos (básico)
 const results = await client.files.search("documento");
-// { files: [...], total }
+// { items: [...], total }
+
+// Búsqueda inteligente (recomendado para nombres complejos)
+const results = await client.files.smartSearch(
+  "La empresa de sillas (2025) Temporada 1 [1080p] {MAX} WEB-DL",
+);
+// Extrae palabras clave únicas automáticamente y filtra resultados
+
+// Búsqueda inteligente con filtros
+const folders = await client.files.smartSearch("Mi Serie", {
+  filter: "folders", // 'files' | 'folders' | 'everything'
+});
+
+// Coincidencia exacta
+const exact = await client.files.smartSearch("nombre exacto", {
+  exactMatch: true,
+});
 
 // Cambiar privacidad
 await client.files.setPrivacy("quickKey", "public");
@@ -270,9 +286,12 @@ for (const file of files) {
 ### Buscar y descargar
 
 ```javascript
-const results = await client.files.search("informe");
+// Usar smartSearch para nombres complejos de archivos
+const results = await client.files.smartSearch(
+  "Prison Break (2005-2017) Temporada 1-5 [Full 1080p]",
+);
 
-for (const file of results.files) {
+for (const file of results.items.filter((i) => !i.isFolder)) {
   const links = await client.files.getLinks(file.quickKey);
   console.log(`📄 ${file.name}`);
   console.log(`   Descargar: ${links.directDownload}`);
@@ -320,44 +339,45 @@ const client = new MediaFireClient({
 
 ## 📋 Métodos Disponibles
 
-| Módulo      | Método                          | Descripción             |
-| ----------- | ------------------------------- | ----------------------- |
-| **Auth**    | `login(email, password)`        | Iniciar sesión          |
-|             | `logout()`                      | Cerrar sesión           |
-|             | `isAuthenticated()`             | Verificar autenticación |
-|             | `getSession()`                  | Obtener datos de sesión |
-|             | `setSession(session)`           | Restaurar sesión        |
-| **User**    | `getInfo()`                     | Info del usuario        |
-|             | `getStorage()`                  | Almacenamiento usado    |
-| **Folders** | `getContent(key, options)`      | Listar contenido        |
-|             | `getFiles(key, options)`        | Listar archivos         |
-|             | `getFolders(key, options)`      | Listar carpetas         |
-|             | `getInfo(key)`                  | Info de carpeta         |
-|             | `create(name, parentKey)`       | Crear carpeta           |
-|             | `rename(key, newName)`          | Renombrar               |
-|             | `move(key, destKey)`            | Mover                   |
-|             | `copy(key, destKey)`            | Copiar                  |
-|             | `setPrivacy(key, privacy)`      | Cambiar privacidad      |
-|             | `delete(key)`                   | Eliminar (papelera)     |
-|             | `purge(key)`                    | Eliminar permanente     |
-| **Files**   | `getInfo(quickKey)`             | Info del archivo        |
-|             | `getLinks(quickKey)`            | Obtener enlaces         |
-|             | `search(query, options)`        | Buscar archivos         |
-|             | `setPrivacy(quickKey, privacy)` | Cambiar privacidad      |
-|             | `makePublic(quickKey)`          | Hacer público           |
-|             | `makePrivate(quickKey)`         | Hacer privado           |
-|             | `rename(quickKey, newName)`     | Renombrar               |
-|             | `move(quickKey, folderKey)`     | Mover                   |
-|             | `copy(quickKey, folderKey)`     | Copiar                  |
-|             | `delete(quickKey)`              | Eliminar (papelera)     |
-|             | `restore(quickKey)`             | Restaurar               |
-|             | `purge(quickKey)`               | Eliminar permanente     |
-|             | `getVersions(quickKey)`         | Historial versiones     |
-|             | `getRecentlyModified()`         | Archivos recientes      |
-| **Upload**  | `file(path, options)`           | Subir desde disco       |
-|             | `buffer(buffer, name, options)` | Subir desde buffer      |
-|             | `check(hash, name, size)`       | Verificar existencia    |
-|             | `instant(hash, name, size)`     | Subida instantánea      |
+| Módulo      | Método                          | Descripción                        |
+| ----------- | ------------------------------- | ---------------------------------- |
+| **Auth**    | `login(email, password)`        | Iniciar sesión                     |
+|             | `logout()`                      | Cerrar sesión                      |
+|             | `isAuthenticated()`             | Verificar autenticación            |
+|             | `getSession()`                  | Obtener datos de sesión            |
+|             | `setSession(session)`           | Restaurar sesión                   |
+| **User**    | `getInfo()`                     | Info del usuario                   |
+|             | `getStorage()`                  | Almacenamiento usado               |
+| **Folders** | `getContent(key, options)`      | Listar contenido                   |
+|             | `getFiles(key, options)`        | Listar archivos                    |
+|             | `getFolders(key, options)`      | Listar carpetas                    |
+|             | `getInfo(key)`                  | Info de carpeta                    |
+|             | `create(name, parentKey)`       | Crear carpeta                      |
+|             | `rename(key, newName)`          | Renombrar                          |
+|             | `move(key, destKey)`            | Mover                              |
+|             | `copy(key, destKey)`            | Copiar                             |
+|             | `setPrivacy(key, privacy)`      | Cambiar privacidad                 |
+|             | `delete(key)`                   | Eliminar (papelera)                |
+|             | `purge(key)`                    | Eliminar permanente                |
+| **Files**   | `getInfo(quickKey)`             | Info del archivo                   |
+|             | `getLinks(quickKey)`            | Obtener enlaces                    |
+|             | `search(query)`                 | Búsqueda básica                    |
+|             | `smartSearch(query, options)`   | Búsqueda inteligente (recomendado) |
+|             | `setPrivacy(quickKey, privacy)` | Cambiar privacidad                 |
+|             | `makePublic(quickKey)`          | Hacer público                      |
+|             | `makePrivate(quickKey)`         | Hacer privado                      |
+|             | `rename(quickKey, newName)`     | Renombrar                          |
+|             | `move(quickKey, folderKey)`     | Mover                              |
+|             | `copy(quickKey, folderKey)`     | Copiar                             |
+|             | `delete(quickKey)`              | Eliminar (papelera)                |
+|             | `restore(quickKey)`             | Restaurar                          |
+|             | `purge(quickKey)`               | Eliminar permanente                |
+|             | `getVersions(quickKey)`         | Historial versiones                |
+|             | `getRecentlyModified()`         | Archivos recientes                 |
+| **Upload**  | `file(path, options)`           | Subir desde disco                  |
+|             | `buffer(buffer, name, options)` | Subir desde buffer                 |
+|             | `check(hash, name, size)`       | Verificar existencia               |
+|             | `instant(hash, name, size)`     | Subida instantánea                 |
 
 ---
 

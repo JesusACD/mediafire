@@ -9,7 +9,7 @@ Complete MediaFire SDK for Node.js. **Just use your email and password** to acce
 - 🔐 **Simple Authentication** - Just email and password, no API keys needed
 - 📁 **Full Management** - Files and folders (create, move, copy, delete)
 - 📤 **File Upload** - Supports large files
-- 🔍 **Search** - Search files in your account
+- 🔍 **Smart Search** - Advanced search with automatic keyword extraction
 - 🔗 **Direct Links** - Get download URLs
 - 📊 **TypeScript** - Full type definitions included
 
@@ -138,9 +138,25 @@ const fileInfo = await client.files.getInfo("quickKey");
 const links = await client.files.getLinks("quickKey");
 // { viewLink, normalDownload, directDownload }
 
-// Search files
+// Search files (basic)
 const results = await client.files.search("document");
-// { files: [...], total }
+// { items: [...], total }
+
+// Smart search (recommended for complex names)
+const results = await client.files.smartSearch(
+  "La empresa de sillas (2025) Temporada 1 [1080p] {MAX} WEB-DL",
+);
+// Automatically extracts unique keywords and filters results
+
+// Smart search with filters
+const folders = await client.files.smartSearch("My Series", {
+  filter: "folders", // 'files' | 'folders' | 'everything'
+});
+
+// Exact match
+const exact = await client.files.smartSearch("exact name", {
+  exactMatch: true,
+});
 
 // Change privacy
 await client.files.setPrivacy("quickKey", "public");
@@ -270,9 +286,12 @@ for (const file of files) {
 ### Search and download
 
 ```javascript
-const results = await client.files.search("report");
+// Use smartSearch for complex file names
+const results = await client.files.smartSearch(
+  "Prison Break (2005-2017) Temporada 1-5 [Full 1080p]",
+);
 
-for (const file of results.files) {
+for (const file of results.items.filter((i) => !i.isFolder)) {
   const links = await client.files.getLinks(file.quickKey);
   console.log(`📄 ${file.name}`);
   console.log(`   Download: ${links.directDownload}`);
@@ -320,44 +339,45 @@ const client = new MediaFireClient({
 
 ## 📋 Available Methods
 
-| Module      | Method                          | Description          |
-| ----------- | ------------------------------- | -------------------- |
-| **Auth**    | `login(email, password)`        | Log in               |
-|             | `logout()`                      | Log out              |
-|             | `isAuthenticated()`             | Check authentication |
-|             | `getSession()`                  | Get session data     |
-|             | `setSession(session)`           | Restore session      |
-| **User**    | `getInfo()`                     | User info            |
-|             | `getStorage()`                  | Storage used         |
-| **Folders** | `getContent(key, options)`      | List contents        |
-|             | `getFiles(key, options)`        | List files           |
-|             | `getFolders(key, options)`      | List folders         |
-|             | `getInfo(key)`                  | Folder info          |
-|             | `create(name, parentKey)`       | Create folder        |
-|             | `rename(key, newName)`          | Rename               |
-|             | `move(key, destKey)`            | Move                 |
-|             | `copy(key, destKey)`            | Copy                 |
-|             | `setPrivacy(key, privacy)`      | Change privacy       |
-|             | `delete(key)`                   | Delete (trash)       |
-|             | `purge(key)`                    | Permanently delete   |
-| **Files**   | `getInfo(quickKey)`             | File info            |
-|             | `getLinks(quickKey)`            | Get links            |
-|             | `search(query, options)`        | Search files         |
-|             | `setPrivacy(quickKey, privacy)` | Change privacy       |
-|             | `makePublic(quickKey)`          | Make public          |
-|             | `makePrivate(quickKey)`         | Make private         |
-|             | `rename(quickKey, newName)`     | Rename               |
-|             | `move(quickKey, folderKey)`     | Move                 |
-|             | `copy(quickKey, folderKey)`     | Copy                 |
-|             | `delete(quickKey)`              | Delete (trash)       |
-|             | `restore(quickKey)`             | Restore              |
-|             | `purge(quickKey)`               | Permanently delete   |
-|             | `getVersions(quickKey)`         | Version history      |
-|             | `getRecentlyModified()`         | Recent files         |
-| **Upload**  | `file(path, options)`           | Upload from disk     |
-|             | `buffer(buffer, name, options)` | Upload from buffer   |
-|             | `check(hash, name, size)`       | Check existence      |
-|             | `instant(hash, name, size)`     | Instant upload       |
+| Module      | Method                          | Description                |
+| ----------- | ------------------------------- | -------------------------- |
+| **Auth**    | `login(email, password)`        | Log in                     |
+|             | `logout()`                      | Log out                    |
+|             | `isAuthenticated()`             | Check authentication       |
+|             | `getSession()`                  | Get session data           |
+|             | `setSession(session)`           | Restore session            |
+| **User**    | `getInfo()`                     | User info                  |
+|             | `getStorage()`                  | Storage used               |
+| **Folders** | `getContent(key, options)`      | List contents              |
+|             | `getFiles(key, options)`        | List files                 |
+|             | `getFolders(key, options)`      | List folders               |
+|             | `getInfo(key)`                  | Folder info                |
+|             | `create(name, parentKey)`       | Create folder              |
+|             | `rename(key, newName)`          | Rename                     |
+|             | `move(key, destKey)`            | Move                       |
+|             | `copy(key, destKey)`            | Copy                       |
+|             | `setPrivacy(key, privacy)`      | Change privacy             |
+|             | `delete(key)`                   | Delete (trash)             |
+|             | `purge(key)`                    | Permanently delete         |
+| **Files**   | `getInfo(quickKey)`             | File info                  |
+|             | `getLinks(quickKey)`            | Get links                  |
+|             | `search(query)`                 | Basic search               |
+|             | `smartSearch(query, options)`   | Smart search (recommended) |
+|             | `setPrivacy(quickKey, privacy)` | Change privacy             |
+|             | `makePublic(quickKey)`          | Make public                |
+|             | `makePrivate(quickKey)`         | Make private               |
+|             | `rename(quickKey, newName)`     | Rename                     |
+|             | `move(quickKey, folderKey)`     | Move                       |
+|             | `copy(quickKey, folderKey)`     | Copy                       |
+|             | `delete(quickKey)`              | Delete (trash)             |
+|             | `restore(quickKey)`             | Restore                    |
+|             | `purge(quickKey)`               | Permanently delete         |
+|             | `getVersions(quickKey)`         | Version history            |
+|             | `getRecentlyModified()`         | Recent files               |
+| **Upload**  | `file(path, options)`           | Upload from disk           |
+|             | `buffer(buffer, name, options)` | Upload from buffer         |
+|             | `check(hash, name, size)`       | Check existence            |
+|             | `instant(hash, name, size)`     | Instant upload             |
 
 ---
 
